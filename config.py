@@ -1,0 +1,8 @@
+import os
+
+TELEGRAM_TOKEN = os.getenv("‎8737127196:AAGHeim1XJq-NWB38teZIh5aNhNFUREG0J4")
+GROQ_API_KEY = os.getenv("‎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")
+
+CHANNEL_USERNAME = "@AZ_Digistore"
+
+ADMIN_ID =  7449515886
