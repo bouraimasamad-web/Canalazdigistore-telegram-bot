@@ -1,64 +1,76 @@
-import asyncio
-from telegram.ext import ApplicationBuilder, MessageHandler, filters
+ import asyncio
 from telegram import Update
-from telegram.ext import ContextTypes
+from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes
 from groq import Groq
-
-from config import *
-from scheduler import start_scheduler
-from campaign_manager import schedule_post
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from config import TELEGRAM_TOKEN, GROQ_API_KEY, CHANNEL_USERNAME, ADMIN_ID
 
 client = Groq(api_key=GROQ_API_KEY)
+scheduler = AsyncIOScheduler()
 
-with open("knowledge_base.txt","r",encoding="utf-8") as f:
-    knowledge=f.read()
+# Chargement base de connaissances
+with open("knowledge_base.txt", "r", encoding="utf-8") as f:
+    knowledge = f.read()
 
-async def handle(update:Update,context:ContextTypes.DEFAULT_TYPE):
 
-    if update.effective_user.id!=ADMIN_ID:
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    if update.effective_user.id != ADMIN_ID:
         return
 
-    msg=update.message.text
+    user_message = update.message.text
 
-    prompt=f"""
-Tu es l'assistant marketing de AZ Digistore.
+    prompt = f"""
+Tu es l'assistant officiel du canal AZ Digistore.
 
-Connaissances:
+BASE DE CONNAISSANCES
 {knowledge}
 
-L'administrateur peut demander :
+Ton rôle est d'aider l'administrateur à :
 
-- publier un message
-- programmer un message
-- créer une campagne marketing
-- générer contenu
+- rédiger des publications
+- créer des annonces
+- créer des promotions
+- générer du contenu marketing
+- préparer des campagnes de contenu
 
-Message admin:
-{msg}
+INSTRUCTION ADMINISTRATEUR
+{user_message}
 
-Réponds uniquement avec le contenu à publier.
+Si l'instruction demande une publication immédiate,
+génère uniquement le texte final prêt à être publié
+dans le canal Telegram.
+
+Le message doit être clair, impactant et adapté à Telegram.
 """
 
-    res=client.chat.completions.create(
+    response = client.chat.completions.create(
         model="llama3-70b-8192",
-        messages=[{"role":"user","content":prompt}]
+        messages=[{"role": "user", "content": prompt}]
     )
 
-    text=res.choices[0].message.content
+    content = response.choices[0].message.content
 
     await context.bot.send_message(
-        chat_id=CHANNEL,
-        text=text
+        chat_id=CHANNEL_USERNAME,
+        text=content
     )
+
+    await update.message.reply_text("Publication envoyée dans le canal.")
+
 
 async def main():
 
-    start_scheduler()
+    scheduler.start()
 
-    app=ApplicationBuilder().token(TELEGRAM_TOKEN).build()
+    app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
 
-    app.add_handler(MessageHandler(filters.TEXT,handle))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+    print("Bot lancé")
 
     await app.run_polling()
 
-asyncio.run(main())
+
+if __name__ == "__main__":
+    asyncio.run(main())
