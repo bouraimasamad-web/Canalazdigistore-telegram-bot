@@ -1,4 +1,4 @@
- import asyncio
+import asyncio
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes
 from groq import Groq
@@ -8,7 +8,6 @@ from config import TELEGRAM_TOKEN, GROQ_API_KEY, CHANNEL_USERNAME, ADMIN_ID
 client = Groq(api_key=GROQ_API_KEY)
 scheduler = AsyncIOScheduler()
 
-# Chargement base de connaissances
 with open("knowledge_base.txt", "r", encoding="utf-8") as f:
     knowledge = f.read()
 
@@ -44,33 +43,4 @@ dans le canal Telegram.
 Le message doit être clair, impactant et adapté à Telegram.
 """
 
-    response = client.chat.completions.create(
-        model="llama3-70b-8192",
-        messages=[{"role": "user", "content": prompt}]
-    )
-
-    content = response.choices[0].message.content
-
-    await context.bot.send_message(
-        chat_id=CHANNEL_USERNAME,
-        text=content
-    )
-
-    await update.message.reply_text("Publication envoyée dans le canal.")
-
-
-async def main():
-
-    scheduler.start()
-
-    app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
-
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-
-    print("Bot lancé")
-
-    await app.run_polling()
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
+    response = client
